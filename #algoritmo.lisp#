@@ -37,7 +37,7 @@
 
 (defun negamax-aux (no-pai sucessores jogador profundidade alfa beta expandidos cortes)
   (cond
-    ((= (length sucessores) 1) (negamax (inverter-f (car sucessores) (- jogador) (1- profundidade) (- beta) (- alfa) (1+ expandidos) cortes)))
+    ((= (length sucessores) 1) (negamax (inverter-f (car sucessores)) (- jogador) (1- profundidade) (- beta) (- alfa) (1+ expandidos) cortes))
   (t
    (let* ( (solucao (negamax (inverter-f (car sucessores)) (- jogador) (1- profundidade) (- beta) (- alfa) (1+ expandidos) cortes))
            (no-solucao (first solucao))
@@ -45,7 +45,7 @@
            (novo-alfa (max alfa (no-heuristica melhor-val)))
            )
      (cond 
-      ((>= novo-alfa beta) (cria-solucao no-pai expandidos (1+ cortes)) )
+      ((>= novo-alfa beta) (cria-solucao no-pai expandidos (1+ cortes)))
       (t (negamax-aux no-pai (cdr sucessores) jogador profundidade novo-alfa beta expandidos cortes))
       )
      )

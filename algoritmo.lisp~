@@ -39,19 +39,19 @@
   (cond
     ((= (length sucessores) 1) (negamax (inverter-f (car sucessores) (- jogador) (1- profundidade) (- beta) (- alfa) (1+ expandidos) cortes)))
   (t
-   (let* ( (solucao (negamax (inverter-f (car sucessores)) (- jogador) (1- profundidade) (- beta) (- alfa) (1+ expandidos) cortes))
-           (no-solucao (first solucao))
-           (melhor-val (compara-f no-pai no-solucao))
-           (novo-alfa (max alfa (no-heuristica melhor-val)))
-           )
-     (cond 
+    (let* ( (solucao (negamax (inverter-f (car sucessores)) (- jogador) (1- profundidade) (- beta) (- alfa) (1+ expandidos) cortes))
+          (no-solucao (first solucao))
+          (melhor-val (compara-f no-pai no-solucao))
+          (novo-alfa (max alfa (no-heuristica melhor-val)))
+        )
+    (cond 
       ((>= novo-alfa beta) (cria-solucao no-pai expandidos (1+ cortes)) )
       (t (negamax-aux no-pai (cdr sucessores) jogador profundidade novo-alfa beta expandidos cortes))
-      )
-     )
-   )
+    )
   )
   )
+  )
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;NOS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun criar-no (tabuleiro &optional (profundidade 0) (pai nil) (valor-f 0) jogador)
