@@ -57,6 +57,35 @@
 )
 )
 
+(defun jogo-teste-1 ()
+'(
+    (
+        ((branca redonda alta oca) 0 0 0) 
+        (0 (branca redonda baixa oca) 0 0) 
+        (0 0 (branca quadrada alta oca) 0) 
+        (0 0 0 0)
+    )
+    (
+        0
+        (preta redonda alta oca)
+        0
+        (preta redonda baixa oca) 
+        0
+        (preta quadrada alta oca)
+        (branca quadrada baixa oca)
+        (preta quadrada baixa oca)
+        (branca redonda alta cheia)
+        (preta redonda alta cheia)
+        (branca redonda baixa cheia)
+        (preta redonda baixa cheia)
+        (branca quadrada alta cheia)
+        (preta quadrada alta cheia)
+        (branca quadrada baixa cheia)
+        (preta quadrada baixa cheia)
+    )
+)
+)
+
 (defun jogo-teste-2 ()
 '(
     (
@@ -185,53 +214,45 @@
   (list 'cor 'forma 'tamanho 'preenchimento)
 )
 
-(defun escreve-tabuleiro (tabuleiro &optional (ficheiro t))
-  (cond 
-   ((null tabuleiro) (format ficheiro "~%"))
-   (t (format ficheiro "~%| ~a |" (car tabuleiro)) (escreve-tabuleiro (cdr tabuleiro) ficheiro))
-   )
+
+(defun compara-carateristicas (lista carateristicas)
+"Compara as carateristicas das pecas na lista"
+  (cond
+    ((member 0 lista) nil)
+    ((null carateristicas) nil)
+    ((compara-pecas lista (car carateristicas)) t)
+    (t (compara-carateristicas lista (cdr carateristicas)))
   )
+)
 
+(defun compara-pecas (lista carateristica &optional (carateristicas '()))
+  "Compara a carateristica escolhida e verifica se todos os elementos posuem a mesma carateristica"
+  (cond
+    ((null lista) (cond
+      ((avalia-lista carateristicas) t)
+      (t nil)
+    ))
+    (t (compara-pecas (cdr lista) carateristica (cons (funcall carateristica (car lista)) carateristicas)))
+  )
+)
 
+(defun avalia-lista (lista &optional (elem-avaliado nil))
+  (cond
+    ((equal elem-avaliado nil) (avalia-lista (cdr lista) (car lista)))
+    ((null lista) t)
+    ((equal (car lista) elem-avaliado) (avalia-lista (cdr lista) (car lista)))
+    (t NIL)
+  )
+)
 
-;; (defun compara-carateristicas (lista carateristicas)
-;; "Compara as carateristicas das pecas na lista"
-;;   (cond
-;;     ((member 0 lista) nil)
-;;     ((null carateristicas) nil)
-;;     ((compara-pecas lista (car carateristicas)) t)
-;;     (t (compara-carateristicas lista (cdr carateristicas)))
-;;   )
-;; )
-
-;; (defun compara-pecas (lista carateristica &optional (carateristicas '()))
-;;   "Compara a carateristica escolhida e verifica se todos os elementos posuem a mesma carateristica"
-;;   (cond
-;;     ((null lista) (cond
-;;       ((avalia-lista carateristicas) t)
-;;       (t nil)
-;;     ))
-;;     (t (compara-pecas (cdr lista) carateristica (cons (funcall carateristica (car lista)) carateristicas)))
-;;   )
-;; )
-
-;; (defun avalia-lista (lista &optional (elem-avaliado nil))
-;;   (cond
-;;     ((equal elem-avaliado nil) (avalia-lista (cdr lista) (car lista)))
-;;     ((null lista) t)
-;;     ((equal (car lista) elem-avaliado) (avalia-lista (cdr lista) (car lista)))
-;;     (t NIL)
-;;   )
-;; )
-
-;; (defun contar-carateristica-comuns (lista peca carateristica &optional (comum 0)) ;;;--> limpar os 0 quando estiver a verificar
-;;   (cond
-;;     ((equal (car lista) 0) (contar-carateristica-comuns (cdr lista) peca carateristica comum))
-;;     ((equal (funcall carateristica (car lista)) (funcall carateristica peca)) (contar-carateristica-comuns (cdr lista) peca carateristica (1+ comum)))
-;;     ((null lista) comum)
-;;     (t (contar-carateristica-comuns (cdr lista) peca carateristica comum))
-;;   )
-;; )
+(defun contar-carateristica-comuns (lista peca carateristica &optional (comum 0)) ;;;--> limpar os 0 quando estiver a verificar
+  (cond
+    ((equal (car lista) 0) (contar-carateristica-comuns (cdr lista) peca carateristica comum))
+    ((equal (funcall carateristica (car lista)) (funcall carateristica peca)) (contar-carateristica-comuns (cdr lista) peca carateristica (1+ comum)))
+    ((null lista) comum)
+    (t (contar-carateristica-comuns (cdr lista) peca carateristica comum))
+  )
+)
 
 ;; (defun p (lin col tabuleiro peca)
 ;;   (if (casa-vaziap lin col tabuleiro) 
@@ -268,6 +289,17 @@
     (t nil) 
    )
   )
+
+(defun p-no (no)
+  (let* ((tabuleiro (tabuleiro (no-estado no)))
+         (linhas (verifica-tabuleiro-combinacoes tabuleiro 'linha))
+         (colunas (verifica-tabuleiro-combinacoes tabuleiro 'coluna))
+         (diagonal1 (verifica-tabuleiro-combinacoes tabuleiro 'diagonal-1))
+         (diagonal2 (verifica-tabuleiro-combinacoes tabuleiro 'diagonal-2))
+         )
+    (max (first linhas) (first colunas) (first diagonal1) (first diagonal2))
+    )
+)
 
 (defun verifica-tabuleiro-combinacoes (tabuleiro fnlista &optional (index 0) (nr-semelhancas 0) carateristica)
   (cond
@@ -324,11 +356,12 @@
         (nr-semelhancas-preenchimento (conta-semelhancas-aux lista 'preenchimento (preenchimento peca)))
         (max-semelhancas (max (first nr-semelhancas-cor) (first nr-semelhancas-tamanho) (first nr-semelhancas-forma) (first nr-semelhancas-preenchimento)))
        )
-    (cond 
-      ((equal max-semelhancas(first nr-semelhancas-cor)) (list max-semelhancas (second nr-semelhancas-cor)))
-      ((equal max-semelhancas (first nr-semelhancas-tamanho)) (list max-semelhancas (second nr-semelhancas-tamanho)))
-      ((equal max-semelhancas (first nr-semelhancas-forma)) (list max-semelhancas (second nr-semelhancas-forma)))
-      ((equal max-semelhancas (first nr-semelhancas-preenchimento)) (list max-semelhancas (second nr-semelhancas-preenchimento)))
+    (cond
+      ((= max-semelhancas 0) (list max-semelhancas))
+      ((equal max-semelhancas(first nr-semelhancas-cor)) (list (1+ max-semelhancas) (second nr-semelhancas-cor)))
+      ((equal max-semelhancas (first nr-semelhancas-tamanho)) (list (1+ max-semelhancas) (second nr-semelhancas-tamanho)))
+      ((equal max-semelhancas (first nr-semelhancas-forma)) (list (1+ max-semelhancas) (second nr-semelhancas-forma)))
+      ((equal max-semelhancas (first nr-semelhancas-preenchimento)) (list (1+ max-semelhancas) (second nr-semelhancas-preenchimento)))
     )
   )
 )
@@ -471,7 +504,7 @@
         (diagonal2 (verifica-tabuleiro-combinacoes tabuleiro 'diagonal-2))
         )
     (cond
-     ((or linhas colunas diagonal1 diagonal2) t)
+     ((or (= (first linhas) 4) (= (first colunas) 4) (= (first diagonal1)4 ) (= (first diagonal2) 4)) t)
      (t nil)
      )
     )

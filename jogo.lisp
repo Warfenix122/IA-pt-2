@@ -261,6 +261,17 @@
    )
   )
 
+(defun p-no (no)
+  (let* ((tabuleiro (tabuleiro (no-estado no)))
+         (linhas (verifica-tabuleiro-combinacoes tabuleiro 'linha))
+         (colunas (verifica-tabuleiro-combinacoes tabuleiro 'coluna))
+         (diagonal1 (verifica-tabuleiro-combinacoes tabuleiro 'diagonal-1))
+         (diagonal2 (verifica-tabuleiro-combinacoes tabuleiro 'diagonal-2))
+         )
+    (max (first linhas) (first colunas) (first diagonal1) (first diagonal2))
+    )
+)
+
 (defun verifica-tabuleiro-combinacoes (tabuleiro fnlista &optional (index 0) (nr-semelhancas 0) carateristica)
   (cond
    ((= index 4) (list nr-semelhancas carateristica))
