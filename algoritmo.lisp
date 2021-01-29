@@ -12,26 +12,6 @@
 )
 
 (defvar memo-negamax (memo 'negamax))
-;; (defun negamax (no tempo-limite jogador &optional (profundidade 16) (alfa most-negative-fixnum) (beta most-positive-fixnum) (expandidos 1) (cortes 0) (tempo-inicial (get-universal-time)))
-;;   (cond 
-;;     ((OR (no-solucaop no) (= profundidade 0) (= (- (get-universal-time) tempo-inicial)) tempo-limite) (* jogador (no-heuristica no)))
-;;     (t (let* ((sucessores (ordenar-nos (remove nil (sucessores no jogador)) jogador)))
-;;       (negamax-aux no tempo-limite sucessores jogador profundidade alfa beta expandidos cortes tempo-inicial)
-;;       ))
-;;     )
-;;   )
-
-;; (defun negamax-aux (no tempo-limite sucessores jogador profundidade alfa beta expandidos cortes tempo-inicial &optional (max-val most-negative-fixnum))
-;;   (let* ((max-valor (max max-val (- (negamax (car sucessores) (- jogador) (1- profundidade) (- beta) (- alfa) (1+ expandidos) cortes tempo-inicial))))
-;;              (novo-alfa (max alfa max-valor))
-;;              ) 
-;;     (if (OR (>= novo-alfa beta) (null (cdr sucessores)))
-;;         (set-jogada max-valor (car sucessores) expandidos (1+ cortes))
-;;        ;(setq *jogada* (list (no-proxima-jogada (car sucessores)) expandidos (1+ cortes))) 
-;;       (negamax-aux no tempo-limite (cdr sucessores) jogador profundidade alfa beta expandidos cortes tempo-inicial max-valor)
-;;       )
-;;     )
-;;   )
 
 (defun negamax(no tempo-limite &optional (jogador 1) (profundidade 16) (alpha most-negative-fixnum) (beta most-positive-fixnum)
                     (tempo-inicial (get-universal-time)) (nos-analisados 1)(nos-cortados 0))

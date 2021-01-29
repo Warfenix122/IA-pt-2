@@ -71,7 +71,9 @@
          )
     (cond 
      ((eq opcao 1) (let* ((jogador-inicial (escolher-jogador))
-                          (tempo-algoritmo (escolher-tempo-algoritmo)))
+                          (tempo-algoritmo (escolher-tempo-algoritmo))
+                          (escrever-tabuleiro (no-estado (no-inicial)))
+                          )
                      (cond 
                       ((= jogador-inicial -1) (jogada-humano (no-inicial) tempo-algoritmo (escolher-profundidade)))
                       (t (jogada-computador (no-inicial) tempo-algoritmo))
@@ -112,9 +114,9 @@
 )
 
 (defun jogada-humano (no tempo &optional (profundidade 16))
-  (let* ((escrever-tabuleiro (escreve-tabuleiro (tabuleiro (no-estado no))))
-         (fazer-jogada (menu-fazer-jogada (no-estado no)))
+  (let* ((fazer-jogada (menu-fazer-jogada (no-estado no)))
          (novo-no (criar-no (operador (first fazer-jogada) (second fazer-jogada) (third fazer-jogada) (no-estado no))))
+         (escrever-tabuleiro (escreve-tabuleiro (tabuleiro (no-estado novo-no))))
          (venceu (venceup (tabuleiro (no-estado no))))
          )
     (cond
@@ -126,12 +128,12 @@
   )
 
 (defun jogada-computador (no tempo &optional (profundidade 16) (modo 1) (nr-jogador 1))
-  (let* ((escrever-tabuleiro (escreve-tabuleiro (tabuleiro (no-estado no))))
-         (jogada-computador (negamax no (/ tempo 1000) nr-jogador profundidade))
+  (let* ((jogada-computador (negamax no (/ tempo 1000) nr-jogador profundidade))
          (no-jogada (obter-jogada-solucao jogada-computador))
          (nos-expandidos (obter-expandidos jogada-computador))
          (nos-cortados (obter-nr-cortes jogada-computador))
          (venceu (venceup (tabuleiro (no-estado no-jogada))))
+         (escrever-listener (escrever-no-listener jogada-computador))
          (escrever-ficheiro (escrever-no-ficheiro jogada-computador))
          )
     (cond
@@ -186,7 +188,6 @@
 (defun escrever-estatisticas (stream estado expandidos cortes tempo-gasto)
   (format stream "~%-----------------------------jogada----------------------------------------------------------------------------")
   (escreve-tabuleiro (tabuleiro estado))
-  (escreve-tabuleiro (reserva estado))
   (format stream "~%                  Nr de nos expandidos: ~a     Nr de cortes: ~a" expandidos cortes)
   (format stream "~%                        Tempo gasto na jogada:~a" tempo-gasto)
   (format stream "~%---------------------------------------------------------------------------------------------------------------")

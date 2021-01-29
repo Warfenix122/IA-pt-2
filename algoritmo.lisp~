@@ -1,39 +1,66 @@
-(defvar *jogada* nil)
-
-(defun negamax (no jogador &optional (profundidade 16) (alfa most-negative-fixnum) (beta most-positive-fixnum) (expandidos 1) (cortes 0))
-  (cond 
-    ((OR (no-solucaop no) (= profundidade 0)) (* jogador (no-heuristica no)))
-    (t (let* ((sucessores (ordenar-nos (remove nil (sucessores no jogador)) jogador)))
-      (negamax-aux no sucessores jogador profundidade alfa beta expandidos cortes)
-      ))
+(defun memo (fn)
+  (let ((table (make-hash-table))) 
+    (lambda (x)
+      (or (gethash x table)
+        (let ((val (funcall fn x)))
+         (setf (gethash x table) val)
+         val
+        )  
+      )
     )
   )
+)
 
-(defun negamax-aux (no sucessores jogador profundidade alfa beta expandidos cortes)
-  ;; (cond
-  ;;  ((= (length sucessores) 1) (- (negamax (car sucessores) (- jogador) (1- profundidade) (- beta) (- alfa) (1+ expandidos) cortes)))
-  ;;  (t (let* ((max-valor (max (no-heuristica no) (- (negamax (car sucessores) (- jogador) (1- profundidade) (- beta) (- alfa) (1+ expandidos) cortes))))
-  ;;            (novo-alfa (max alfa max-valor))
-  ;;            )
-  ;;       (if (>= novo-alfa beta)
-  ;;           (setq *jogada* (list (no-proxima-jogada (car sucessores)) expandidos (1+ cortes)))
-  ;;         (negamax-aux no (cdr sucessores) jogador profundidade alfa beta expandidos cortes)
-  ;;         )
-  ;;       )
-  ;;     )
-  ;;  )
-  (let* ((max-valor (max (no-heuristica no) (- (negamax (car sucessores) (- jogador) (1- profundidade) (- beta) (- alfa) (1+ expandidos) cortes))))
-             (novo-alfa (max alfa max-valor))
-             )
-        (if (>= novo-alfa beta)
-            (setq *jogada* (list (no-proxima-jogada (car sucessores)) expandidos (1+ cortes)))
-          ;(negamax-aux no (cdr sucessores) jogador profundidade alfa beta expandidos cortes)
-          )
-        )
-  )
- 
+(defvar memo-negamax (memo 'negamax))
+;; (defun negamax (no tempo-limite jogador &optional (profundidade 16) (alfa most-negative-fixnum) (beta most-positive-fixnum) (expandidos 1) (cortes 0) (tempo-inicial (get-universal-time)))
+;;   (cond 
+;;     ((OR (no-solucaop no) (= profundidade 0) (= (- (get-universal-time) tempo-inicial)) tempo-limite) (* jogador (no-heuristica no)))
+;;     (t (let* ((sucessores (ordenar-nos (remove nil (sucessores no jogador)) jogador)))
+;;       (negamax-aux no tempo-limite sucessores jogador profundidade alfa beta expandidos cortes tempo-inicial)
+;;       ))
+;;     )
+;;   )
+
+;; (defun negamax-aux (no tempo-limite sucessores jogador profundidade alfa beta expandidos cortes tempo-inicial &optional (max-val most-negative-fixnum))
+;;   (let* ((max-valor (max max-val (- (negamax (car sucessores) (- jogador) (1- profundidade) (- beta) (- alfa) (1+ expandidos) cortes tempo-inicial))))
+;;              (novo-alfa (max alfa max-valor))
+;;              ) 
+;;     (if (OR (>= novo-alfa beta) (null (cdr sucessores)))
+;;         (set-jogada max-valor (car sucessores) expandidos (1+ cortes))
+;;        ;(setq *jogada* (list (no-proxima-jogada (car sucessores)) expandidos (1+ cortes))) 
+;;       (negamax-aux no tempo-limite (cdr sucessores) jogador profundidade alfa beta expandidos cortes tempo-inicial max-valor)
+;;       )
+;;     )
+;;   )
+
+(defun negamax(no tempo-limite &optional (jogador 1) (profundidade 16) (alpha most-negative-fixnum) (beta most-positive-fixnum)
+                    (tempo-inicial (get-universal-time)) (nos-analisados 1)(nos-cortados 0))
+  (let*  ((sucessores (ordenar-nos (funcall 'sucessores no jogador) jogador))
+          (tempo-gasto (- (get-universal-time) tempo-inicial)))
+    (cond ((or (= profundidade 0) (= (length sucessores) 0) (>= tempo-gasto tempo-limite))
+      (cria-solucao (recalcular-h no jogador) nos-analisados nos-cortados tempo-inicial))
+     (T (negamax-aux no sucessores tempo-limite jogador profundidade alpha beta tempo-inicial nos-analisados nos-cortados))))
+)
+
+(defun negamax-aux(no-pai sucessores tempo-limite jogador profundidade alpha beta tempo-inicial nos-analisados nos-cortados)
+  (cond
+   ((= (length sucessores) 1) 
+    (negamax (inverter-h (car sucessores)) tempo-limite (- jogador) (1- profundidade) (- beta) (- alpha) tempo-inicial (1+ nos-analisados) nos-cortados))
+   (T (let*  ((car-solucao (negamax (inverter-h (car sucessores)) tempo-limite (- jogador) (1- profundidade) (- beta) (- alpha)
+                                   tempo-inicial (1+ nos-analisados) nos-cortados))
+            (car-node (car car-solucao))
+            (melhor-valor (compara-h car-node no-pai))
+            (novo-alpha (max alpha (no-heuristica melhor-valor)))
+            (car-nos-analisados (obter-expandidos car-solucao))       
+            (car-nos-cortados (obter-nr-cortes car-solucao)))
+      (if (>= novo-alpha beta)
+          (cria-solucao no-pai car-nos-analisados (1+ car-nos-cortados) tempo-inicial)
+        (negamax-aux no-pai (cdr sucessores) tempo-limite jogador profundidade novo-alpha beta tempo-inicial car-nos-analisados car-nos-cortados)))))
+)
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;NOS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun criar-no (tabuleiro &optional (profundidade 0) (pai nil) (valor-f most-negative-fixnum) jogador)
+(defun criar-no (tabuleiro &optional (profundidade 0) (pai nil) (valor-f 0) jogador)
     (list tabuleiro profundidade valor-f pai jogador)
 )
 
@@ -47,6 +74,12 @@
      )
    )
   )
+
+(defun set-jogada(valor-maximo no expandidos cortes)
+  (let ((por-variavel (setq *jogada* (list (no-proxima-jogada no) expandidos cortes))))
+    valor-maximo
+    )
+)
 
 (defun no-teste ()
   (criar-no (jogo-teste-2) 0 nil 0 -1)
@@ -81,8 +114,7 @@
 )
 
 (defun cria-solucao(no-jogada nos-analisados nos-cortados &optional tempo-inicial)
-  ;(list no-jogada nos-analisados nos-cortados (obter-tempo-gasto tempo-inicial))
-  (list no-jogada nos-analisados nos-cortados)
+  (list no-jogada nos-analisados nos-cortados (obter-tempo-gasto tempo-inicial))
 )
 
 (defun obter-jogada-solucao(no-solucao)
@@ -197,44 +229,7 @@
   )
 )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;HEURISTICA;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun heuristica-enunciado (lin col estado peca)
-  (let ((p (p lin col (tabuleiro estado) peca)))
-      (cond
-       ((not p) nil)
-       (t (- 4 p))
-       )
-      )
-  )
-
-(defun avalia-jogada (estado lin col peca jogador)
-  ;; (cond 
-  ;;  ((equal jogador 1) (let* ((linha (linha lin (tabuleiro estado)))
-  ;;                            (coluna (coluna col (tabuleiro estado)))
-  ;;                            (linha-semelhancas (conta-semelhancas linha peca))
-  ;;                            (coluna-semelhancas (conta-semelhancas coluna peca))
-  ;;                            )
-  ;;                            (cond 
-  ;;                             ((= lin col) (if (or (= linha-semelhancas 1) (= coluna-semelhancas 1) (= (conta-semelhancas (diagonal1 tabuleiro) peca) 1))))
-  ;;                             ((= (- 3 lin) col) )
-  ;;                             (t )
-  ;;                           )
-                          
-  ;;                         ))   ;;;Joga MAX
-  ;;  (t) ;;;;; Joga Min
-  ;;  )
-  (let* ((p-jogada (p lin col estado peca)))
-          (cond 
-            ((= p-jogada 1) (* jogador 10))
-            ((= p-jogada 2) (* jogador 20))
-            ((= p-jogada 3) (* (- jogador) 100))
-            ((= p-jogada 4) (* jogador 100))
-        )
-  )
-)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;SORTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;SORTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun ordenar-nos (lista-nos jogador)
   "Quick sort da lista de nos, faz sort crescente dependendo do f calculado"
